@@ -1,0 +1,96 @@
+### =============================================================================
+### Booking Service — http://localhost:3001
+### =============================================================================
+### Usage: Open in JetBrains IDE or VS Code (REST Client extension)
+### Variables are defined in http-client.env.json
+### =============================================================================
+
+@baseUrl = http://localhost:3001
+@clientId = 019600cf-1000-7000-8000-000000000001
+@vehicleId = 019600cf-2000-7000-8000-000000000002
+
+### -----------------------------------------------------------------------------
+### Health
+### -----------------------------------------------------------------------------
+
+### Health check
+GET {{baseUrl}}/health
+
+### -----------------------------------------------------------------------------
+### Create booking
+### -----------------------------------------------------------------------------
+
+### Create a booking (valid)
+# @name createBooking
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+
+{
+  "client_id": "{{clientId}}",
+  "vehicle_id": "{{vehicleId}}",
+  "scheduled_at": "2026-06-01T10:00:00Z",
+  "pickup_address": "10 rue de Rivoli, 75001 Paris",
+  "dropoff_address": "CDG Terminal 2E, 95700 Roissy-en-France",
+  "total_amount": 4500,
+  "estimated_km": 32.5,
+  "co2_grams": 4200
+}
+
+### Create a booking — missing client_id (expect 400)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+
+{
+  "vehicle_id": "{{vehicleId}}",
+  "scheduled_at": "2026-06-01T10:00:00Z",
+  "pickup_address": "10 rue de Rivoli, 75001 Paris",
+  "dropoff_address": "CDG Terminal 2E, 95700 Roissy-en-France"
+}
+
+### Create a booking — scheduled_at in the past (expect 422)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+
+{
+  "client_id": "{{clientId}}",
+  "vehicle_id": "{{vehicleId}}",
+  "scheduled_at": "2020-01-01T10:00:00Z",
+  "pickup_address": "10 rue de Rivoli, 75001 Paris",
+  "dropoff_address": "CDG Terminal 2E, 95700 Roissy-en-France"
+}
+
+### -----------------------------------------------------------------------------
+### Get booking
+### -----------------------------------------------------------------------------
+
+### Get booking by ID — replace with ID from createBooking response
+GET {{baseUrl}}/bookings/REPLACE_WITH_BOOKING_ID
+
+### Get booking — not found (expect 404)
+GET {{baseUrl}}/bookings/019600cf-0000-7000-8000-000000000000
+
+### -----------------------------------------------------------------------------
+### List bookings
+### -----------------------------------------------------------------------------
+
+### List bookings by client
+GET {{baseUrl}}/bookings?client_id={{clientId}}
+
+### List bookings — missing client_id (expect 400)
+GET {{baseUrl}}/bookings
+
+### -----------------------------------------------------------------------------
+### Lifecycle transitions
+### -----------------------------------------------------------------------------
+
+### Confirm booking — replace with real ID
+PATCH {{baseUrl}}/bookings/REPLACE_WITH_BOOKING_ID/confirm
+
+### Complete booking — must be CONFIRMED first
+PATCH {{baseUrl}}/bookings/REPLACE_WITH_BOOKING_ID/complete
+
+### Cancel booking
+PATCH {{baseUrl}}/bookings/REPLACE_WITH_BOOKING_ID/cancel
+
+### Confirm already cancelled booking (expect 422 — invalid transition)
+PATCH {{baseUrl}}/bookings/REPLACE_WITH_BOOKING_ID/confirm

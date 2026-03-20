@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "default_title": "VTC.solutions | Premium Private Transfers & Long Distance",
+    "default_description": "Professional VTC services in Saint-Jean-de-Luz, Biarritz, and the wider Basque region. Door-to-door local transfers and international long-distance travel."
+  },
+  "hero_title": "Basque Coast Chauffeur",
+  "footer": {
+    "terms": "Terms & Conditions"
+  },
+  "terms": {
+    "title": "Terms and Conditions of Service",
+    "legal_id": "Legal Identification",
+    "company_name": "Company Name",
+    "address": "Registered Office",
+    "service_title": "Services and Reservations",
+    "service_desc": "Our services consist of providing a chauffeur-driven vehicle (VTC) for private or professional transport. All rides must be booked in advance.",
+    "pricing_title": "Rates and Payment",
+    "pricing_desc": "Prices are communicated at the time of booking and include 10% VAT (Transport). For long distances or night shifts, surcharges may apply. Payment is due upon booking.",
+    "cancellation_title": "Cancellation Policy",
+    "cancellation_desc": "Cancellations made more than 24 hours before the pickup time are fully refunded. Cancellations within 24 hours are subject to a 50% fee. 'No-shows' are charged at 100%.",
+    "insurance_title": "Insurance and Liability",
+    "insurance_text": "VTC.solutions holds Professional Liability Insurance (RCP) covering risks related to its passenger transport activities for hire, in accordance with Article L. 3120-4 of the French Transport Code. This insurance covers physical, material, and consequential damages caused to passengers and third parties.",
+    "insurance_details": "Transport services are covered by a 'Professional Vehicle Insurance' policy specifically for passenger transport for hire, providing unlimited coverage for personal injury."
+  }
+}

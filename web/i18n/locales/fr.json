@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "default_title": "VTC.solutions | Transferts Privés Premium & Longue Distance",
+    "default_description": "Services VTC professionnels à Saint-Jean-de-Luz, Biarritz et au Pays Basque. Transferts locaux et trajets internationaux longue distance."
+  },
+  "hero_title": "Chauffeur Côte Basque",
+  "footer": {
+    "terms": "Mentions Légales & CGV"
+  },
+  "terms": {
+    "title": "Conditions Générales de Vente",
+    "legal_id": "Mentions Légales",
+    "company_name": "Dénomination Sociale",
+    "address": "Siège Social",
+    "service_title": "Prestations et Réservations",
+    "service_desc": "Nos services consistent en la mise à disposition d'un véhicule avec chauffeur (VTC). Toute course doit faire l'objet d'une réservation préalable.",
+    "pricing_title": "Tarifs et Paiement",
+    "pricing_desc": "Les tarifs sont communiqués lors de la réservation et incluent la TVA de 10%. Le paiement s'effectue à la réservation.",
+    "cancellation_title": "Conditions d'Annulation",
+    "cancellation_desc": "Annulation gratuite jusqu'à 24h avant la course. Entre 24h et 2h avant, 50% du montant est dû. En cas de non-présentation, 100% du montant est facturé.",
+    "insurance_title": "Assurances et Responsabilité",
+    "insurance_text": "VTC.solutions a souscrit à une assurance Responsabilité Civile Professionnelle (RCP) couvrant les risques liés à son activité de transport de personnes à titre onéreux, conformément à l'article L. 3120-4 du Code des transports.",
+    "insurance_details": "Le transport est couvert par une police d'assurance 'Circulation Professionnelle' spécifique au transport de passagers à titre onéreux, garantissant une couverture illimitée pour les dommages corporels."
+  }
+}

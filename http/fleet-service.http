@@ -1,0 +1,157 @@
+### =============================================================================
+### Fleet Service — http://localhost:3003
+### =============================================================================
+### Usage: Open in JetBrains IDE or VS Code (REST Client extension)
+### =============================================================================
+
+@baseUrl = http://localhost:3003
+
+### -----------------------------------------------------------------------------
+### Health
+### -----------------------------------------------------------------------------
+
+### Health check
+GET {{baseUrl}}/health
+
+### -----------------------------------------------------------------------------
+### Create vehicle
+### -----------------------------------------------------------------------------
+
+### Create a vehicle (valid)
+# @name createVehicle
+POST {{baseUrl}}/vehicles
+Content-Type: application/json
+
+{
+  "number_plate": "AB-123-CD",
+  "brand": "Mercedes-Benz",
+  "model": "Classe E",
+  "year": 2022
+}
+
+### Create another vehicle
+# @name createVehicle2
+POST {{baseUrl}}/vehicles
+Content-Type: application/json
+
+{
+  "number_plate": "EF-456-GH",
+  "brand": "BMW",
+  "model": "Série 5",
+  "year": 2023
+}
+
+### Create vehicle — duplicate number plate (expect 409)
+POST {{baseUrl}}/vehicles
+Content-Type: application/json
+
+{
+  "number_plate": "AB-123-CD",
+  "brand": "Peugeot",
+  "model": "508",
+  "year": 2021
+}
+
+### Create vehicle — missing brand (expect 400)
+POST {{baseUrl}}/vehicles
+Content-Type: application/json
+
+{
+  "number_plate": "IJ-789-KL",
+  "brand": "",
+  "model": "308",
+  "year": 2022
+}
+
+### Create vehicle — year too old (expect 422)
+POST {{baseUrl}}/vehicles
+Content-Type: application/json
+
+{
+  "number_plate": "MN-000-OP",
+  "brand": "Renault",
+  "model": "Laguna",
+  "year": 2010
+}
+
+### -----------------------------------------------------------------------------
+### Get vehicle
+### -----------------------------------------------------------------------------
+
+### Get vehicle by ID — replace with ID from createVehicle response
+GET {{baseUrl}}/vehicles/REPLACE_WITH_VEHICLE_ID
+
+### Get vehicle — not found (expect 404)
+GET {{baseUrl}}/vehicles/00000000-0000-7000-8000-000000000000
+
+### -----------------------------------------------------------------------------
+### List active vehicles
+### -----------------------------------------------------------------------------
+
+### List all active vehicles
+GET {{baseUrl}}/vehicles
+
+### -----------------------------------------------------------------------------
+### Update vehicle
+### -----------------------------------------------------------------------------
+
+### Update model only
+PATCH {{baseUrl}}/vehicles/REPLACE_WITH_VEHICLE_ID
+Content-Type: application/json
+
+{
+  "model": "Classe E 300"
+}
+
+### Update multiple fields
+PATCH {{baseUrl}}/vehicles/REPLACE_WITH_VEHICLE_ID
+Content-Type: application/json
+
+{
+  "brand": "Mercedes-Benz",
+  "model": "Classe E 400",
+  "year": 2023
+}
+
+### Update number plate — duplicate (expect 409)
+PATCH {{baseUrl}}/vehicles/REPLACE_WITH_VEHICLE_ID
+Content-Type: application/json
+
+{
+  "number_plate": "EF-456-GH"
+}
+
+### Update year — invalid (expect 422)
+PATCH {{baseUrl}}/vehicles/REPLACE_WITH_VEHICLE_ID
+Content-Type: application/json
+
+{
+  "year": 2005
+}
+
+### Update — vehicle not found (expect 404)
+PATCH {{baseUrl}}/vehicles/00000000-0000-7000-8000-000000000000
+Content-Type: application/json
+
+{
+  "brand": "Toyota"
+}
+
+### -----------------------------------------------------------------------------
+### Activate / Deactivate
+### -----------------------------------------------------------------------------
+
+### Deactivate vehicle
+POST {{baseUrl}}/vehicles/REPLACE_WITH_VEHICLE_ID/deactivate
+
+### List active vehicles — deactivated vehicle should not appear
+GET {{baseUrl}}/vehicles
+
+### Activate vehicle
+POST {{baseUrl}}/vehicles/REPLACE_WITH_VEHICLE_ID/activate
+
+### List active vehicles — vehicle should reappear
+GET {{baseUrl}}/vehicles
+
+### Deactivate — vehicle not found (expect 404)
+POST {{baseUrl}}/vehicles/00000000-0000-7000-8000-000000000000/deactivate

@@ -1,0 +1,172 @@
+### =============================================================================
+### Client Service — http://localhost:3002
+### =============================================================================
+### Usage: Open in JetBrains IDE or VS Code (REST Client extension)
+### =============================================================================
+
+@baseUrl = http://localhost:3002
+@clerkUserId = user_2abc123def456
+
+### -----------------------------------------------------------------------------
+### Health
+### -----------------------------------------------------------------------------
+
+### Health check
+GET {{baseUrl}}/health
+
+### -----------------------------------------------------------------------------
+### Clerk webhook
+### -----------------------------------------------------------------------------
+
+### Simulate Clerk user.created webhook (valid)
+# @name webhookCreated
+POST {{baseUrl}}/webhooks/clerk
+Content-Type: application/json
+
+{
+  "type": "user.created",
+  "data": {
+    "id": "{{clerkUserId}}",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "email_addresses": [
+      {
+        "email_address": "jean.dupont@example.com",
+        "primary": true
+      }
+    ]
+  }
+}
+
+### Simulate Clerk user.created — duplicate (expect 200, idempotent)
+POST {{baseUrl}}/webhooks/clerk
+Content-Type: application/json
+
+{
+  "type": "user.created",
+  "data": {
+    "id": "{{clerkUserId}}",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "email_addresses": [
+      {
+        "email_address": "jean.dupont@example.com",
+        "primary": true
+      }
+    ]
+  }
+}
+
+### Simulate Clerk user.created — missing first_name (expect 400)
+POST {{baseUrl}}/webhooks/clerk
+Content-Type: application/json
+
+{
+  "type": "user.created",
+  "data": {
+    "id": "user_invalid",
+    "first_name": "",
+    "last_name": "Dupont",
+    "email_addresses": [
+      {
+        "email_address": "jean.dupont@example.com",
+        "primary": true
+      }
+    ]
+  }
+}
+
+### Simulate Clerk user.deleted (expect 200, no-op)
+POST {{baseUrl}}/webhooks/clerk
+Content-Type: application/json
+
+{
+  "type": "user.deleted",
+  "data": {
+    "id": "{{clerkUserId}}",
+    "first_name": "",
+    "last_name": "",
+    "email_addresses": []
+  }
+}
+
+### Simulate unknown webhook type (expect 200, ignored)
+POST {{baseUrl}}/webhooks/clerk
+Content-Type: application/json
+
+{
+  "type": "session.created",
+  "data": {
+    "id": "{{clerkUserId}}",
+    "first_name": "",
+    "last_name": "",
+    "email_addresses": []
+  }
+}
+
+### -----------------------------------------------------------------------------
+### Get client
+### -----------------------------------------------------------------------------
+
+### Get client by internal ID — replace with ID from webhook response
+GET {{baseUrl}}/clients/REPLACE_WITH_CLIENT_ID
+
+### Get client by Clerk user ID
+GET {{baseUrl}}/clients/clerk/{{clerkUserId}}
+
+### Get client — not found (expect 404)
+GET {{baseUrl}}/clients/00000000-0000-7000-8000-000000000000
+
+### -----------------------------------------------------------------------------
+### Update client
+### -----------------------------------------------------------------------------
+
+### Update phone (valid French number)
+PATCH {{baseUrl}}/clients/REPLACE_WITH_CLIENT_ID
+Content-Type: application/json
+
+{
+  "phone": "+33612345678"
+}
+
+### Update notes (operator only)
+PATCH {{baseUrl}}/clients/REPLACE_WITH_CLIENT_ID
+Content-Type: application/json
+
+{
+  "notes": "Accès code immeuble: 1234. Préfère être contacté par SMS."
+}
+
+### Enable pay later
+PATCH {{baseUrl}}/clients/REPLACE_WITH_CLIENT_ID
+Content-Type: application/json
+
+{
+  "can_pay_later": true
+}
+
+### Update multiple fields at once
+PATCH {{baseUrl}}/clients/REPLACE_WITH_CLIENT_ID
+Content-Type: application/json
+
+{
+  "phone": "+33698765432",
+  "notes": "Client corporate — facturation mensuelle.",
+  "can_pay_later": true
+}
+
+### Update phone — invalid format (expect 422)
+PATCH {{baseUrl}}/clients/REPLACE_WITH_CLIENT_ID
+Content-Type: application/json
+
+{
+  "phone": "not-a-phone"
+}
+
+### Update — client not found (expect 404)
+PATCH {{baseUrl}}/clients/00000000-0000-7000-8000-000000000000
+Content-Type: application/json
+
+{
+  "phone": "+33612345678"
+}

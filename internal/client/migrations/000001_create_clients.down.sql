@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS client.clients;
+
+DROP SCHEMA IF EXISTS client;

@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS proof.proofs;
+
+DROP SCHEMA IF EXISTS proof;

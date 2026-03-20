@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS fleet.vehicles;
+
+DROP SCHEMA IF EXISTS fleet;
