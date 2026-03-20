@@ -1,4 +1,5 @@
 <script setup>
+const { isSignedIn, isLoaded } = useAuth()
 const switchLocalePath = useSwitchLocalePath()
 const localePath = useLocalePath()
 const title = $t('meta.default_title')
@@ -18,9 +19,6 @@ useSeoMeta({
   description: description,
   ogTitle: title,
   ogDescription: description
-  // ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
-  // twitterImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
-  // twitterCard: 'summary_large_image'
 })
 </script>
 
@@ -36,21 +34,25 @@ useSeoMeta({
       <template #right>
         <UColorModeButton class="portrait:hidden" />
 
-        <Show when="signed-out">
-          <SignUpButton>
-            <UButton
-              label="Register"
-              variant="ghost"
-            />
-          </SignUpButton>
-          <SignInButton>
-            <UButton label="Connect" />
-          </SignInButton>
-        </Show>
+        <ClientOnly>
+          <ClerkLoaded>
+            <template v-if="isLoaded && !isSignedIn">
+              <SignUpButton mode="modal">
+                <UButton
+                  label="Register"
+                  variant="ghost"
+                />
+              </SignUpButton>
+              <SignInButton mode="modal">
+                <UButton label="Connect" />
+              </SignInButton>
+            </template>
 
-        <Show when="signed-in">
-          <UserButton after-sign-out-url="/" />
-        </Show>
+            <template v-if="isLoaded && isSignedIn">
+              <UserButton after-sign-out-url="/" />
+            </template>
+          </ClerkLoaded>
+        </ClientOnly>
       </template>
     </UHeader>
 
@@ -74,17 +76,20 @@ useSeoMeta({
           <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium opacity-80">
             <NuxtLink
               :to="switchLocalePath('en')"
-              class="hover:text-primary transition-colors">
+              class="hover:text-primary transition-colors"
+            >
               English
             </NuxtLink>
             <NuxtLink
               :to="switchLocalePath('fr')"
-              class="hover:text-primary transition-colors">
+              class="hover:text-primary transition-colors"
+            >
               Français
             </NuxtLink>
             <NuxtLink
               :to="switchLocalePath('ja')"
-              class="hover:text-primary transition-colors">
+              class="hover:text-primary transition-colors"
+            >
               日本語
             </NuxtLink>
           </div>

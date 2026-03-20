@@ -6,8 +6,7 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxtjs/i18n',
     '@nuxtjs/sitemap',
-    '@nuxtjs/robots',
-    '@nuxtjs/leaflet'
+    '@nuxtjs/robots'
   ],
 
   devtools: {
@@ -30,6 +29,16 @@ export default defineNuxtConfig({
         target: 'http://localhost:8080',
         changeOrigin: true
       }
+    }
+  },
+
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@clerk/vue',
+        '@vue/devtools-core',
+        '@vue/devtools-kit'
+      ]
     }
   },
 
@@ -66,15 +75,5 @@ export default defineNuxtConfig({
 
   sitemap: {
     autoLastmod: true // This ensures /fr/, /en/, etc. are all included
-  },
-
-  vite: {
-    optimizeDeps: {
-      include: [
-        '@clerk/vue',
-        '@vue/devtools-core',
-        '@vue/devtools-kit'
-      ]
-    }
   }
 })
