@@ -1,6 +1,18 @@
 <script setup>
 const route = useRoute()
-const redirectUrl = computed(() => route.query.redirect || '/')
+const localePath = useLocalePath()
+
+const redirectUrl = computed(() => {
+  const redirect = route.query.redirect
+  if (!redirect) {
+    return localePath('/booking')
+  }
+  try {
+    return new URL(redirect).pathname
+  } catch {
+    return redirect
+  }
+})
 </script>
 
 <template>
