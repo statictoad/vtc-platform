@@ -10,105 +10,11 @@ useHead({
 })
 
 // ---------------------------------------------------------------------------
-// Address autocomplete
+// Addresses
 // ---------------------------------------------------------------------------
 
-const ADDRESS_API = 'https://api-adresse.data.gouv.fr/search/'
-
-const pickup = ref({
-  street: '',
-  zip: '',
-  city: '',
-  extra: '',
-  coords: null
-})
-
-const dropoff = ref({
-  street: '',
-  zip: '',
-  city: '',
-  extra: '',
-  coords: null
-})
-
-const pickupSuggestions = ref([])
-const dropoffSuggestions = ref([])
-const pickupLoading = ref(false)
-const dropoffLoading = ref(false)
-
-async function fetchSuggestions(query, targetRef, loadingRef) {
-  const q = [query.street, query.zip, query.city].filter(Boolean).join(' ').trim()
-  if (q.length < 3) {
-    targetRef.value = []
-    return
-  }
-  loadingRef.value = true
-  try {
-    const res = await fetch(`${ADDRESS_API}?q=${encodeURIComponent(q)}&limit=5&countrycodes=fr`)
-    const data = await res.json()
-    targetRef.value = data.features || []
-  } catch {
-    targetRef.value = []
-  } finally {
-    loadingRef.value = false
-  }
-}
-
-let suppressPickup = false
-let suppressDropoff = false
-
-function selectSuggestion(feature, targetAddress, which) {
-  const p = feature.properties
-  targetAddress.street = p.name || ''
-  targetAddress.zip = p.postcode || ''
-  targetAddress.city = p.city || ''
-  targetAddress.coords = [feature.geometry.coordinates[1], feature.geometry.coordinates[0]]
-  if (which === 'pickup') {
-    pickupSuggestions.value = []
-    suppressPickup = true
-  } else {
-    dropoffSuggestions.value = []
-    suppressDropoff = true
-  }
-}
-
-let pickupTimer = null
-let dropoffTimer = null
-
-function onPickupInput() {
-  if (suppressPickup) {
-    suppressPickup = false
-    return
-  }
-  clearTimeout(pickupTimer)
-  pickupTimer = setTimeout(() => fetchSuggestions(pickup.value, pickupSuggestions, pickupLoading), 300)
-}
-
-function onDropoffInput() {
-  if (suppressDropoff) {
-    suppressDropoff = false
-    return
-  }
-  clearTimeout(dropoffTimer)
-  dropoffTimer = setTimeout(() => fetchSuggestions(dropoff.value, dropoffSuggestions, dropoffLoading), 300)
-}
-
-// ---------------------------------------------------------------------------
-// Pre-fill from query params (landing page redirects)
-// ---------------------------------------------------------------------------
-
-onMounted(() => {
-  if (route.query.pickup) pickup.value.street = route.query.pickup
-  if (route.query.dropoff) dropoff.value.street = route.query.dropoff
-  initMap()
-})
-
-onUnmounted(() => {
-  if (map) {
-    map.remove()
-    map = null
-  }
-})
+const pickup = ref({ street: '', zip: '', city: '', extra: '', coords: null })
+const dropoff = ref({ street: '', zip: '', city: '', extra: '', coords: null })
 
 // ---------------------------------------------------------------------------
 // Date & time
@@ -124,11 +30,6 @@ const bookingTime = ref('')
 
 const passengers = ref(1)
 const suitcases = ref(0)
-const MAX_PASSENGERS = 6
-
-function clamp(val, min, max) {
-  return Math.min(Math.max(val, min), max)
-}
 
 // ---------------------------------------------------------------------------
 // Special items
@@ -138,8 +39,8 @@ const specialItems = ref([
   { id: 'surfboard', label: 'booking.items.surfboard', supplement: 5, selected: false },
   { id: 'bicycle', label: 'booking.items.bicycle', supplement: 5, selected: false },
   { id: 'wheelchair', label: 'booking.items.wheelchair', supplement: 0, selected: false },
-  { id: 'golf', label: 'booking.items.golf', supplement: 5, selected: false },
-  { id: 'ski', label: 'booking.items.ski', supplement: 5, selected: false },
+  { id: 'golf', label: 'booking.items.golf', supplement: 0, selected: false },
+  { id: 'ski', label: 'booking.items.ski', supplement: 0, selected: false },
   { id: 'pet', label: 'booking.items.pet', supplement: 0, selected: false }
 ])
 
@@ -172,9 +73,6 @@ const selectedSupplements = computed(() =>
 // Map (vanilla Leaflet)
 // ---------------------------------------------------------------------------
 
-const mapCenter = ref([43.39, -1.66])
-const mapZoom = ref(10)
-
 let map = null
 let pickupMarker = null
 let dropoffMarker = null
@@ -184,7 +82,6 @@ async function initMap() {
   const L = (await import('leaflet')).default
   await import('leaflet/dist/leaflet.css')
 
-  // Fix default marker icons broken by Vite
   delete L.Icon.Default.prototype._getIconUrl
   L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -192,15 +89,13 @@ async function initMap() {
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
   })
 
-  map = L.map('map').setView(mapCenter.value, mapZoom.value)
+  map = L.map('map').setView([43.39, -1.66], 10)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   }).addTo(map)
 
-  // Watch for coord changes after map is ready
   watch([() => pickup.value.coords, () => dropoff.value.coords], async ([pCoords, dCoords]) => {
-    // Update pickup marker
     if (pCoords) {
       if (pickupMarker) pickupMarker.setLatLng(pCoords)
       else pickupMarker = L.marker(pCoords).addTo(map)
@@ -209,7 +104,6 @@ async function initMap() {
       pickupMarker = null
     }
 
-    // Update dropoff marker
     if (dCoords) {
       if (dropoffMarker) dropoffMarker.setLatLng(dCoords)
       else dropoffMarker = L.marker(dCoords).addTo(map)
@@ -218,14 +112,10 @@ async function initMap() {
       dropoffMarker = null
     }
 
-    // Draw route
     if (pCoords && dCoords) {
       await fetchRoute(L, pCoords, dCoords)
     } else {
-      if (routePolyline) {
-        map.removeLayer(routePolyline)
-        routePolyline = null
-      }
+      if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null }
       routeDistance.value = null
     }
   })
@@ -239,7 +129,6 @@ async function fetchRoute(L, from, to) {
     if (data.routes?.[0]) {
       const coords = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng])
       routeDistance.value = Math.round(data.routes[0].distance / 1000)
-
       if (routePolyline) map.removeLayer(routePolyline)
       routePolyline = L.polyline(coords, { color: '#00A155', weight: 4, opacity: 0.8 }).addTo(map)
       map.fitBounds(routePolyline.getBounds(), { padding: [40, 40] })
@@ -248,6 +137,16 @@ async function fetchRoute(L, from, to) {
     routeDistance.value = null
   }
 }
+
+onMounted(() => {
+  if (route.query.pickup) pickup.value.street = route.query.pickup
+  if (route.query.dropoff) dropoff.value.street = route.query.dropoff
+  initMap()
+})
+
+onUnmounted(() => {
+  if (map) { map.remove(); map = null }
+})
 
 // ---------------------------------------------------------------------------
 // Notes
@@ -264,10 +163,7 @@ const submitted = ref(false)
 const submitError = ref('')
 
 const formValid = computed(() =>
-  pickup.value.coords
-  && dropoff.value.coords
-  && bookingDate.value
-  && bookingTime.value
+  pickup.value.coords && dropoff.value.coords && bookingDate.value && bookingTime.value
 )
 
 async function submitBooking() {
@@ -276,22 +172,8 @@ async function submitBooking() {
   submitError.value = ''
   try {
     const payload = {
-      pickup: {
-        street: pickup.value.street,
-        zip: pickup.value.zip,
-        city: pickup.value.city,
-        extra: pickup.value.extra,
-        lat: pickup.value.coords[0],
-        lng: pickup.value.coords[1]
-      },
-      dropoff: {
-        street: dropoff.value.street,
-        zip: dropoff.value.zip,
-        city: dropoff.value.city,
-        extra: dropoff.value.extra,
-        lat: dropoff.value.coords[0],
-        lng: dropoff.value.coords[1]
-      },
+      pickup: { ...pickup.value, lat: pickup.value.coords[0], lng: pickup.value.coords[1] },
+      dropoff: { ...dropoff.value, lat: dropoff.value.coords[0], lng: dropoff.value.coords[1] },
       date: bookingDate.value,
       time: bookingTime.value,
       passengers: passengers.value,
@@ -336,134 +218,40 @@ async function submitBooking() {
       <UButton
         :to="localePath('/')"
         variant="subtle"
-        label="Back to home"
+        :label="$t('booking.back_home')"
       />
     </div>
 
     <!-- Booking form -->
     <div
       v-else
-      class="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-0 border border-default rounded-xl overflow-hidden min-h-[700px]"
+      class="grid grid-cols-1 lg:grid-cols-[480px_1fr] border border-default rounded-xl overflow-hidden min-h-[700px]"
     >
       <!-- Left panel — form -->
       <div class="flex flex-col divide-y divide-default overflow-y-auto max-h-[85vh] lg:max-h-none">
         <!-- Pickup -->
-        <div class="p-5 flex flex-col gap-3">
-          <p class="text-xs text-muted uppercase tracking-widest font-medium">
-            {{ $t('booking.pickup') }}
-          </p>
-          <div class="relative flex gap-2">
-            <div class="flex-1 relative">
-              <UInput
-                v-model="pickup.street"
-                :placeholder="$t('booking.street')"
-                icon="i-lucide-map-pin"
-                class="w-full"
-                @input="onPickupInput"
-              />
-              <div
-                v-if="pickupSuggestions.length"
-                class="absolute z-50 top-full mt-1 w-full bg-default border border-default rounded-lg shadow-lg overflow-hidden"
-              >
-                <button
-                  v-for="s in pickupSuggestions"
-                  :key="s.properties.id"
-                  class="w-full text-left px-3 py-2 text-sm hover:bg-elevated transition-colors"
-                  @click="selectSuggestion(s, pickup, 'pickup')"
-                >
-                  <span class="font-medium">{{ s.properties.name }}</span>
-                  <span class="text-muted ml-1">{{ s.properties.postcode }} {{ s.properties.city }}</span>
-                </button>
-              </div>
-            </div>
-            <UInput
-              v-model="pickup.zip"
-              :placeholder="$t('booking.zip')"
-              class="w-24"
-              @input="onPickupInput"
-            />
-          </div>
-          <UInput
-            v-model="pickup.city"
-            :placeholder="$t('booking.city')"
-            icon="i-lucide-building-2"
-            @input="onPickupInput"
+        <UFormField
+          :label="$t('booking.pickup')"
+          class="p-5"
+        >
+          <BookingAddressBlock
+            v-model="pickup"
+            icon="i-lucide-map-pin"
+            :extra-placeholder="$t('booking.extra_pickup')"
           />
-          <UInput
-            v-model="pickup.extra"
-            :placeholder="$t('booking.extra_pickup')"
-            icon="i-lucide-info"
-          />
-          <p
-            v-if="pickup.coords"
-            class="text-xs text-primary flex items-center gap-1"
-          >
-            <UIcon
-              name="i-lucide-circle-check"
-              class="w-3 h-3"
-            />
-            {{ $t('booking.address_confirmed') }}
-          </p>
-        </div>
+        </UFormField>
 
         <!-- Dropoff -->
-        <div class="p-5 flex flex-col gap-3">
-          <p class="text-xs text-muted uppercase tracking-widest font-medium">
-            {{ $t('booking.dropoff') }}
-          </p>
-          <div class="relative flex gap-2">
-            <div class="flex-1 relative">
-              <UInput
-                v-model="dropoff.street"
-                :placeholder="$t('booking.street')"
-                icon="i-lucide-flag"
-                class="w-full"
-                @input="onDropoffInput"
-              />
-              <div
-                v-if="dropoffSuggestions.length"
-                class="absolute z-50 top-full mt-1 w-full bg-default border border-default rounded-lg shadow-lg overflow-hidden"
-              >
-                <button
-                  v-for="s in dropoffSuggestions"
-                  :key="s.properties.id"
-                  class="w-full text-left px-3 py-2 text-sm hover:bg-elevated transition-colors"
-                  @click="selectSuggestion(s, dropoff, 'dropoff')"
-                >
-                  <span class="font-medium">{{ s.properties.name }}</span>
-                  <span class="text-muted ml-1">{{ s.properties.postcode }} {{ s.properties.city }}</span>
-                </button>
-              </div>
-            </div>
-            <UInput
-              v-model="dropoff.zip"
-              :placeholder="$t('booking.zip')"
-              class="w-24"
-              @input="onDropoffInput"
-            />
-          </div>
-          <UInput
-            v-model="dropoff.city"
-            :placeholder="$t('booking.city')"
-            icon="i-lucide-building-2"
-            @input="onDropoffInput"
+        <UFormField
+          :label="$t('booking.dropoff')"
+          class="p-5"
+        >
+          <BookingAddressBlock
+            v-model="dropoff"
+            icon="i-lucide-flag"
+            :extra-placeholder="$t('booking.extra_dropoff')"
           />
-          <UInput
-            v-model="dropoff.extra"
-            :placeholder="$t('booking.extra_dropoff')"
-            icon="i-lucide-info"
-          />
-          <p
-            v-if="dropoff.coords"
-            class="text-xs text-primary flex items-center gap-1"
-          >
-            <UIcon
-              name="i-lucide-circle-check"
-              class="w-3 h-3"
-            />
-            {{ $t('booking.address_confirmed') }}
-          </p>
-        </div>
+        </UFormField>
 
         <!-- Date & time -->
         <div class="p-5 flex flex-col gap-3">
@@ -491,53 +279,19 @@ async function submitBooking() {
             {{ $t('booking.passengers_luggage') }}
           </p>
           <div class="grid grid-cols-2 gap-4">
-            <div>
-              <p class="text-xs text-muted mb-2">
-                {{ $t('booking.passengers') }}
-              </p>
-              <div class="flex items-center border border-default rounded-lg overflow-hidden">
-                <button
-                  class="px-3 py-2 bg-elevated hover:bg-accented transition-colors text-sm font-medium disabled:opacity-30"
-                  :disabled="passengers <= 1"
-                  @click="passengers = clamp(passengers - 1, 1, MAX_PASSENGERS)"
-                >
-                  −
-                </button>
-                <span class="flex-1 text-center text-sm font-medium border-x border-default py-2">{{ passengers }}</span>
-                <button
-                  class="px-3 py-2 bg-elevated hover:bg-accented transition-colors text-sm font-medium disabled:opacity-30"
-                  :disabled="passengers >= MAX_PASSENGERS"
-                  @click="passengers = clamp(passengers + 1, 1, MAX_PASSENGERS)"
-                >
-                  +
-                </button>
-              </div>
-              <p class="text-xs text-muted mt-1">
-                {{ $t('booking.max_passengers') }}
-              </p>
-            </div>
-            <div>
-              <p class="text-xs text-muted mb-2">
-                {{ $t('booking.suitcases') }}
-              </p>
-              <div class="flex items-center border border-default rounded-lg overflow-hidden">
-                <button
-                  class="px-3 py-2 bg-elevated hover:bg-accented transition-colors text-sm font-medium disabled:opacity-30"
-                  :disabled="suitcases <= 0"
-                  @click="suitcases = clamp(suitcases - 1, 0, 6)"
-                >
-                  −
-                </button>
-                <span class="flex-1 text-center text-sm font-medium border-x border-default py-2">{{ suitcases }}</span>
-                <button
-                  class="px-3 py-2 bg-elevated hover:bg-accented transition-colors text-sm font-medium disabled:opacity-30"
-                  :disabled="suitcases >= 6"
-                  @click="suitcases = clamp(suitcases + 1, 0, 6)"
-                >
-                  +
-                </button>
-              </div>
-            </div>
+            <BookingCounter
+              v-model="passengers"
+              :min="1"
+              :max="6"
+              :label="$t('booking.passengers')"
+              :hint="$t('booking.max_passengers')"
+            />
+            <BookingCounter
+              v-model="suitcases"
+              :min="0"
+              :max="6"
+              :label="$t('booking.suitcases')"
+            />
           </div>
         </div>
 
@@ -552,21 +306,16 @@ async function submitBooking() {
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <button
+            <UButton
               v-for="item in specialItems"
               :key="item.id"
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-colors"
-              :class="item.selected
-                ? 'border-primary bg-primary/10 text-primary font-medium'
-                : 'border-default text-muted hover:border-muted'"
+              size="sm"
+              :variant="item.selected ? 'soft' : 'outline'"
+              :color="item.selected ? 'primary' : 'neutral'"
+              :label="item.supplement > 0 ? `${$t(item.label)} +€${item.supplement}` : $t(item.label)"
+              class="rounded-full"
               @click="toggleItem(item)"
-            >
-              {{ $t(item.label) }}
-              <span
-                v-if="item.supplement > 0"
-                class="text-xs opacity-70"
-              >+€{{ item.supplement }}</span>
-            </button>
+            />
           </div>
         </div>
 
@@ -613,12 +362,14 @@ async function submitBooking() {
               </div>
             </div>
           </div>
-          <p
+
+          <UAlert
             v-if="submitError"
-            class="text-xs text-red-500"
-          >
-            {{ submitError }}
-          </p>
+            color="error"
+            variant="soft"
+            :description="submitError"
+          />
+
           <UButton
             block
             size="lg"
@@ -627,6 +378,7 @@ async function submitBooking() {
             :label="$t('booking.confirm')"
             @click="submitBooking"
           />
+
           <p
             v-if="!formValid"
             class="text-xs text-center text-muted"
@@ -643,20 +395,27 @@ async function submitBooking() {
           class="w-full h-full min-h-[700px]"
         />
 
-        <div
+        <UBadge
           v-if="routeDistance"
-          class="absolute bottom-4 right-4 z-[1000] bg-default border border-default rounded-lg px-3 py-2 text-sm font-medium shadow"
+          class="absolute bottom-4 right-4 z-[1000]"
+          color="neutral"
+          variant="soft"
+          size="lg"
         >
           {{ routeDistance }} km
-        </div>
+        </UBadge>
 
         <div
           v-if="!pickup.coords && !dropoff.coords"
           class="absolute inset-0 z-[400] flex items-center justify-center pointer-events-none"
         >
-          <p class="text-sm text-muted bg-default/80 px-4 py-2 rounded-lg border border-default">
+          <UBadge
+            color="neutral"
+            variant="soft"
+            size="lg"
+          >
             {{ $t('booking.map_hint') }}
-          </p>
+          </UBadge>
         </div>
       </div>
     </div>
