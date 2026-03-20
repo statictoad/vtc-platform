@@ -21,5 +21,40 @@
     "insurance_title": "Insurance and Liability",
     "insurance_text": "VTC.solutions holds Professional Liability Insurance (RCP) covering risks related to its passenger transport activities for hire, in accordance with Article L. 3120-4 of the French Transport Code. This insurance covers physical, material, and consequential damages caused to passengers and third parties.",
     "insurance_details": "Transport services are covered by a 'Professional Vehicle Insurance' policy specifically for passenger transport for hire, providing unlimited coverage for personal injury."
+  },
+  "booking": {
+    "title": "Book a ride",
+    "pickup": "Pickup",
+    "dropoff": "Dropoff",
+    "street": "Street & number",
+    "zip": "ZIP",
+    "city": "City",
+    "extra_pickup": "Additional info (floor, door code…)",
+    "extra_dropoff": "Additional info (terminal, gate, hotel…)",
+    "address_confirmed": "Address confirmed",
+    "when": "When",
+    "passengers_luggage": "Passengers & luggage",
+    "passengers": "Passengers",
+    "max_passengers": "Max 6 passengers",
+    "suitcases": "Suitcases",
+    "special_items": "Special items",
+    "special_items_note": "Pre-order required — supplement may apply",
+    "items": {
+      "surfboard": "Surfboard",
+      "bicycle": "Bicycle",
+      "wheelchair": "Wheelchair",
+      "golf": "Golf bag",
+      "ski": "Ski / snowboard",
+      "pet": "Pet"
+    },
+    "notes": "Notes for the driver",
+    "notes_placeholder": "Flight number, special requests, anything useful…",
+    "estimated_fare": "Estimated fare",
+    "fare_pending": "Enter addresses to get an estimate",
+    "confirm": "Confirm booking",
+    "fill_required": "Please fill in addresses, date and time",
+    "map_hint": "Enter pickup and dropoff to see the route",
+    "confirmed_title": "Booking confirmed!",
+    "confirmed_desc": "You'll receive a confirmation shortly. The driver will contact you if needed."
   }
 }

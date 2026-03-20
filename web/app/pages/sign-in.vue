@@ -1,9 +1,12 @@
+<script setup>
+const route = useRoute()
+const redirectUrl = computed(() => route.query.redirect || '/')
+</script>
+
 <template>
   <UContainer class="py-12">
-    <section class="prose dark:prose-invert max-w-none">
-      <div class="flex justify-center items-center">
-        <SignIn force-redirect-url="/booking" />
-      </div>
-    </section>
+    <div class="flex justify-center items-center">
+      <SignIn :force-redirect-url="redirectUrl" />
+    </div>
   </UContainer>
 </template>

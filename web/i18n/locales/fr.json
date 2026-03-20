@@ -21,5 +21,40 @@
     "insurance_title": "Assurances et Responsabilité",
     "insurance_text": "VTC.solutions a souscrit à une assurance Responsabilité Civile Professionnelle (RCP) couvrant les risques liés à son activité de transport de personnes à titre onéreux, conformément à l'article L. 3120-4 du Code des transports.",
     "insurance_details": "Le transport est couvert par une police d'assurance 'Circulation Professionnelle' spécifique au transport de passagers à titre onéreux, garantissant une couverture illimitée pour les dommages corporels."
+  },
+  "booking": {
+    "title": "Réserver une course",
+    "pickup": "Prise en charge",
+    "dropoff": "Destination",
+    "street": "Rue et numéro",
+    "zip": "Code postal",
+    "city": "Ville",
+    "extra_pickup": "Infos complémentaires (étage, code porte…)",
+    "extra_dropoff": "Infos complémentaires (terminal, gate, hôtel…)",
+    "address_confirmed": "Adresse confirmée",
+    "when": "Quand",
+    "passengers_luggage": "Passagers & bagages",
+    "passengers": "Passagers",
+    "max_passengers": "6 passagers max",
+    "suitcases": "Valises",
+    "special_items": "Équipements spéciaux",
+    "special_items_note": "Sur réservation — supplément possible",
+    "items": {
+      "surfboard": "Planche de surf",
+      "bicycle": "Vélo",
+      "wheelchair": "Fauteuil roulant",
+      "golf": "Sac de golf",
+      "ski": "Ski / snowboard",
+      "pet": "Animal de compagnie"
+    },
+    "notes": "Notes pour le chauffeur",
+    "notes_placeholder": "Numéro de vol, demandes particulières…",
+    "estimated_fare": "Tarif estimé",
+    "fare_pending": "Entrez les adresses pour obtenir une estimation",
+    "confirm": "Confirmer la réservation",
+    "fill_required": "Veuillez renseigner les adresses, la date et l'heure",
+    "map_hint": "Entrez les adresses pour voir le trajet",
+    "confirmed_title": "Réservation confirmée !",
+    "confirmed_desc": "Vous recevrez une confirmation prochainement. Le chauffeur vous contactera si nécessaire."
   }
 }

@@ -1,3 +1,7 @@
+<script setup>
+const localePath = useLocalePath()
+</script>
+
 <template>
   <div>
     <UPageHero
@@ -5,8 +9,7 @@
       description="From the bay of Saint-Jean-de-Luz to the surf spots of Hossegor. Reliable service, affordable prices."
       :links="[{
         label: 'Book now',
-        to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-        target: '_blank',
+        to: localePath('booking'),
         trailingIcon: 'i-ic:sharp-near-me',
         size: 'xl'
       }, {
