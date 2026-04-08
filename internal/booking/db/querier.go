@@ -12,8 +12,9 @@ import (
 
 type Querier interface {
 	CreateBooking(ctx context.Context, arg CreateBookingParams) error
-	GetBookingByID(ctx context.Context, id pgtype.UUID) (BookingBooking, error)
-	ListBookingsByClientID(ctx context.Context, clientID pgtype.UUID) ([]BookingBooking, error)
+	GetBookingByID(ctx context.Context, id pgtype.UUID) (GetBookingByIDRow, error)
+	ListBookingsByClientID(ctx context.Context, clientID pgtype.UUID) ([]ListBookingsByClientIDRow, error)
+	UpdateBookingCoordinates(ctx context.Context, arg UpdateBookingCoordinatesParams) error
 	UpdateBookingInvoice(ctx context.Context, arg UpdateBookingInvoiceParams) (int64, error)
 	UpdateBookingStatus(ctx context.Context, arg UpdateBookingStatusParams) (int64, error)
 }

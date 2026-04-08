@@ -66,7 +66,7 @@ func (s *Service) Create(ctx context.Context, input CreateBookingInput) (*Bookin
 		Status:             StatusPending,
 		TotalAmount:        input.TotalAmount,
 		TaxRateBasisPoints: nil,
-		EstimatedKm:        input.EstimatedKm,
+		EstimatedDistance:  input.EstimatedDistance,
 		Co2Grams:           input.Co2Grams,
 		CreatedAt:          now,
 		UpdatedAt:          now,

@@ -128,7 +128,7 @@ async function fetchRoute(L, from, to) {
     const data = await res.json()
     if (data.routes?.[0]) {
       const coords = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng])
-      routeDistance.value = Math.round(data.routes[0].distance / 1000)
+      routeDistance.value = data.routes[0].distance
       if (routePolyline) map.removeLayer(routePolyline)
       routePolyline = L.polyline(coords, { color: '#00A155', weight: 4, opacity: 0.8 }).addTo(map)
       map.fitBounds(routePolyline.getBounds(), { padding: [40, 40] })

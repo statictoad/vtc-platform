@@ -14,16 +14,22 @@ import (
 const createBooking = `-- name: CreateBooking :exec
 INSERT INTO booking.bookings (
     id, client_id, vehicle_id,
-    scheduled_at, pickup_address, dropoff_address,
+    scheduled_at,
+    pickup_street, pickup_city, pickup_country, pickup_details,
+    dropoff_street, dropoff_city, dropoff_country, dropoff_details,
+    passengers, suitcases, notes,
     status, total_amount, tax_rate_basis_points,
-    estimated_km, co2_grams,
+    estimated_distance, co2_grams,
     created_at, updated_at
 ) VALUES (
     $1, $2, $3,
-    $4, $5, $6,
-    $7, $8, $9,
-    $10, $11,
-    $12, $13
+    $4,
+    $5, $6, $7, $8,
+    $9, $10, $11, $12,
+    $13, $14, $15,
+    $16, $17, $18,
+    $19, $20,
+    $21, $22
 )
 `
 
@@ -32,12 +38,21 @@ type CreateBookingParams struct {
 	ClientID           pgtype.UUID
 	VehicleID          pgtype.UUID
 	ScheduledAt        pgtype.Timestamptz
-	PickupAddress      string
-	DropoffAddress     string
+	PickupStreet       string
+	PickupCity         string
+	PickupCountry      string
+	PickupDetails      pgtype.Text
+	DropoffStreet      string
+	DropoffCity        string
+	DropoffCountry     string
+	DropoffDetails     pgtype.Text
+	Passengers         int16
+	Suitcases          int16
+	Notes              pgtype.Text
 	Status             BookingBookingStatus
 	TotalAmount        pgtype.Int4
-	TaxRateBasisPoints pgtype.Int4
-	EstimatedKm        pgtype.Float8
+	TaxRateBasisPoints pgtype.Int2
+	EstimatedDistance  pgtype.Int4
 	Co2Grams           pgtype.Int4
 	CreatedAt          pgtype.Timestamptz
 	UpdatedAt          pgtype.Timestamptz
@@ -49,12 +64,21 @@ func (q *Queries) CreateBooking(ctx context.Context, arg CreateBookingParams) er
 		arg.ClientID,
 		arg.VehicleID,
 		arg.ScheduledAt,
-		arg.PickupAddress,
-		arg.DropoffAddress,
+		arg.PickupStreet,
+		arg.PickupCity,
+		arg.PickupCountry,
+		arg.PickupDetails,
+		arg.DropoffStreet,
+		arg.DropoffCity,
+		arg.DropoffCountry,
+		arg.DropoffDetails,
+		arg.Passengers,
+		arg.Suitcases,
+		arg.Notes,
 		arg.Status,
 		arg.TotalAmount,
 		arg.TaxRateBasisPoints,
-		arg.EstimatedKm,
+		arg.EstimatedDistance,
 		arg.Co2Grams,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -64,29 +88,68 @@ func (q *Queries) CreateBooking(ctx context.Context, arg CreateBookingParams) er
 
 const getBookingByID = `-- name: GetBookingByID :one
 SELECT id, client_id, vehicle_id,
-       scheduled_at, pickup_address, dropoff_address,
+       scheduled_at,
+       pickup_street, pickup_city, pickup_country, pickup_details,
+       dropoff_street, dropoff_city, dropoff_country, dropoff_details,
+       passengers, suitcases, notes,
        status, total_amount, tax_rate_basis_points,
-       estimated_km, co2_grams,
+       estimated_distance, co2_grams,
        external_invoice_id, invoice_url,
        created_at, updated_at
 FROM booking.bookings
 WHERE id = $1
 `
 
-func (q *Queries) GetBookingByID(ctx context.Context, id pgtype.UUID) (BookingBooking, error) {
+type GetBookingByIDRow struct {
+	ID                 pgtype.UUID
+	ClientID           pgtype.UUID
+	VehicleID          pgtype.UUID
+	ScheduledAt        pgtype.Timestamptz
+	PickupStreet       string
+	PickupCity         string
+	PickupCountry      string
+	PickupDetails      pgtype.Text
+	DropoffStreet      string
+	DropoffCity        string
+	DropoffCountry     string
+	DropoffDetails     pgtype.Text
+	Passengers         int16
+	Suitcases          int16
+	Notes              pgtype.Text
+	Status             BookingBookingStatus
+	TotalAmount        pgtype.Int4
+	TaxRateBasisPoints pgtype.Int2
+	EstimatedDistance  pgtype.Int4
+	Co2Grams           pgtype.Int4
+	ExternalInvoiceID  pgtype.Text
+	InvoiceUrl         pgtype.Text
+	CreatedAt          pgtype.Timestamptz
+	UpdatedAt          pgtype.Timestamptz
+}
+
+func (q *Queries) GetBookingByID(ctx context.Context, id pgtype.UUID) (GetBookingByIDRow, error) {
 	row := q.db.QueryRow(ctx, getBookingByID, id)
-	var i BookingBooking
+	var i GetBookingByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.ClientID,
 		&i.VehicleID,
 		&i.ScheduledAt,
-		&i.PickupAddress,
-		&i.DropoffAddress,
+		&i.PickupStreet,
+		&i.PickupCity,
+		&i.PickupCountry,
+		&i.PickupDetails,
+		&i.DropoffStreet,
+		&i.DropoffCity,
+		&i.DropoffCountry,
+		&i.DropoffDetails,
+		&i.Passengers,
+		&i.Suitcases,
+		&i.Notes,
 		&i.Status,
 		&i.TotalAmount,
 		&i.TaxRateBasisPoints,
-		&i.EstimatedKm,
+		&i.EstimatedDistance,
 		&i.Co2Grams,
 		&i.ExternalInvoiceID,
 		&i.InvoiceUrl,
@@ -98,9 +161,12 @@ func (q *Queries) GetBookingByID(ctx context.Context, id pgtype.UUID) (BookingBo
 
 const listBookingsByClientID = `-- name: ListBookingsByClientID :many
 SELECT id, client_id, vehicle_id,
-       scheduled_at, pickup_address, dropoff_address,
+       scheduled_at,
+       pickup_street, pickup_city, pickup_country, pickup_details,
+       dropoff_street, dropoff_city, dropoff_country, dropoff_details,
+       passengers, suitcases, notes,
        status, total_amount, tax_rate_basis_points,
-       estimated_km, co2_grams,
+       estimated_distance, co2_grams,
        external_invoice_id, invoice_url,
        created_at, updated_at
 FROM booking.bookings
@@ -108,26 +174,62 @@ WHERE client_id = $1
 ORDER BY scheduled_at DESC
 `
 
-func (q *Queries) ListBookingsByClientID(ctx context.Context, clientID pgtype.UUID) ([]BookingBooking, error) {
+type ListBookingsByClientIDRow struct {
+	ID                 pgtype.UUID
+	ClientID           pgtype.UUID
+	VehicleID          pgtype.UUID
+	ScheduledAt        pgtype.Timestamptz
+	PickupStreet       string
+	PickupCity         string
+	PickupCountry      string
+	PickupDetails      pgtype.Text
+	DropoffStreet      string
+	DropoffCity        string
+	DropoffCountry     string
+	DropoffDetails     pgtype.Text
+	Passengers         int16
+	Suitcases          int16
+	Notes              pgtype.Text
+	Status             BookingBookingStatus
+	TotalAmount        pgtype.Int4
+	TaxRateBasisPoints pgtype.Int2
+	EstimatedDistance  pgtype.Int4
+	Co2Grams           pgtype.Int4
+	ExternalInvoiceID  pgtype.Text
+	InvoiceUrl         pgtype.Text
+	CreatedAt          pgtype.Timestamptz
+	UpdatedAt          pgtype.Timestamptz
+}
+
+func (q *Queries) ListBookingsByClientID(ctx context.Context, clientID pgtype.UUID) ([]ListBookingsByClientIDRow, error) {
 	rows, err := q.db.Query(ctx, listBookingsByClientID, clientID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []BookingBooking
+	var items []ListBookingsByClientIDRow
 	for rows.Next() {
-		var i BookingBooking
+		var i ListBookingsByClientIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ClientID,
 			&i.VehicleID,
 			&i.ScheduledAt,
-			&i.PickupAddress,
-			&i.DropoffAddress,
+			&i.PickupStreet,
+			&i.PickupCity,
+			&i.PickupCountry,
+			&i.PickupDetails,
+			&i.DropoffStreet,
+			&i.DropoffCity,
+			&i.DropoffCountry,
+			&i.DropoffDetails,
+			&i.Passengers,
+			&i.Suitcases,
+			&i.Notes,
 			&i.Status,
 			&i.TotalAmount,
 			&i.TaxRateBasisPoints,
-			&i.EstimatedKm,
+			&i.EstimatedDistance,
 			&i.Co2Grams,
 			&i.ExternalInvoiceID,
 			&i.InvoiceUrl,
@@ -142,6 +244,35 @@ func (q *Queries) ListBookingsByClientID(ctx context.Context, clientID pgtype.UU
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateBookingCoordinates = `-- name: UpdateBookingCoordinates :exec
+UPDATE booking.bookings
+SET pickup_coordinates  = ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
+    dropoff_coordinates = ST_SetSRID(ST_MakePoint($4, $5), 4326)::geography,
+    updated_at          = $6
+WHERE id = $1
+`
+
+type UpdateBookingCoordinatesParams struct {
+	ID            pgtype.UUID
+	StMakepoint   interface{}
+	StMakepoint_2 interface{}
+	StMakepoint_3 interface{}
+	StMakepoint_4 interface{}
+	UpdatedAt     pgtype.Timestamptz
+}
+
+func (q *Queries) UpdateBookingCoordinates(ctx context.Context, arg UpdateBookingCoordinatesParams) error {
+	_, err := q.db.Exec(ctx, updateBookingCoordinates,
+		arg.ID,
+		arg.StMakepoint,
+		arg.StMakepoint_2,
+		arg.StMakepoint_3,
+		arg.StMakepoint_4,
+		arg.UpdatedAt,
+	)
+	return err
 }
 
 const updateBookingInvoice = `-- name: UpdateBookingInvoice :execrows

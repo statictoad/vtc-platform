@@ -19,22 +19,35 @@ type Booking struct {
 	ClientID           string
 	VehicleID          string
 	ScheduledAt        time.Time
-	PickupAddress      string
-	DropoffAddress     string
+	PickupStreet       string
+	PickupCity         string
+	PickupCountry      string
+	PickupDetails      *string
+	PickupLat          *float64 // from GEOGRAPHY(POINT, 4326)
+	PickupLng          *float64
+	DropoffStreet      string
+	DropoffCity        string
+	DropoffCountry     string
+	DropoffDetails     *string
+	DropoffLat         *float64
+	DropoffLng         *float64
+	Passengers         int
+	Suitcases          int
+	Notes              *string
 	Status             BookingStatus
-	TotalAmount        *int     // optional — not known at booking creation time
-	TaxRateBasisPoints *int     // optional — set later
-	EstimatedKm        *float64 // optional — may not be calculated
-	Co2Grams           *int     // optional — regulatory display, may be absent
-	ExternalInvoiceID  *string  // set later by billing-service
-	InvoiceURL         *string  // set later by billing-service
+	TotalAmount        *int    // optional — not known at booking creation time
+	TaxRateBasisPoints *int    // optional — set later
+	EstimatedDistance  *int    // optional — in meters
+	Co2Grams           *int    // optional — regulatory display
+	ExternalInvoiceID  *string // set later by billing-service
+	InvoiceURL         *string // set later by billing-service
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
 
 // Client is what booking-service needs to know about a client.
 // This is NOT imported from client-service — it is a local read model.
-// It is populated by calling client-service via HTTP before creating a booking.
+// Populated by calling client-service via HTTP before creating a booking.
 type Client struct {
 	ID          string
 	FirstName   string
@@ -56,14 +69,27 @@ type Vehicle struct {
 // CreateBookingInput carries the data needed to create a new booking.
 // Received from the HTTP handler after decoding and validating the request body.
 type CreateBookingInput struct {
-	ClientID       string
-	VehicleID      string
-	ScheduledAt    time.Time
-	PickupAddress  string
-	DropoffAddress string
-	TotalAmount    *int
-	EstimatedKm    *float64
-	Co2Grams       *int
+	ClientID          string
+	VehicleID         string
+	ScheduledAt       time.Time
+	PickupStreet      string
+	PickupCity        string
+	PickupCountry     string
+	PickupDetails     *string
+	PickupLat         *float64
+	PickupLng         *float64
+	DropoffStreet     string
+	DropoffCity       string
+	DropoffCountry    string
+	DropoffDetails    *string
+	DropoffLat        *float64
+	DropoffLng        *float64
+	Passengers        int
+	Suitcases         int
+	Notes             *string
+	TotalAmount       *int
+	EstimatedDistance *int
+	Co2Grams          *int
 }
 
 // Validate checks that the input is complete and coherent.
@@ -80,11 +106,26 @@ func (i CreateBookingInput) Validate() error {
 	if i.ScheduledAt.Before(time.Now()) {
 		return ErrScheduledAtInPast
 	}
-	if i.PickupAddress == "" {
-		return ErrMissingPickupAddress
+	if i.PickupStreet == "" {
+		return ErrMissingPickupStreet
 	}
-	if i.DropoffAddress == "" {
-		return ErrMissingDropoffAddress
+	if i.PickupCity == "" {
+		return ErrMissingPickupCity
+	}
+	if i.PickupCountry == "" {
+		return ErrMissingPickupCountry
+	}
+	if i.DropoffStreet == "" {
+		return ErrMissingDropoffStreet
+	}
+	if i.DropoffCity == "" {
+		return ErrMissingDropoffCity
+	}
+	if i.DropoffCountry == "" {
+		return ErrMissingDropoffCountry
+	}
+	if i.Passengers < 1 || i.Passengers > 6 {
+		return ErrInvalidPassengers
 	}
 	return nil
 }
@@ -104,8 +145,13 @@ const (
 	ErrMissingVehicleID      domainError = "vehicle_id is required"
 	ErrMissingScheduledAt    domainError = "scheduled_at is required"
 	ErrScheduledAtInPast     domainError = "scheduled_at must be in the future"
-	ErrMissingPickupAddress  domainError = "pickup_address is required"
-	ErrMissingDropoffAddress domainError = "dropoff_address is required"
+	ErrMissingPickupStreet   domainError = "pickup_street is required"
+	ErrMissingPickupCity     domainError = "pickup_city is required"
+	ErrMissingPickupCountry  domainError = "pickup_country is required"
+	ErrMissingDropoffStreet  domainError = "dropoff_street is required"
+	ErrMissingDropoffCity    domainError = "dropoff_city is required"
+	ErrMissingDropoffCountry domainError = "dropoff_country is required"
+	ErrInvalidPassengers     domainError = "passengers must be between 1 and 6"
 	ErrBookingNotFound       domainError = "booking not found"
 	ErrInvalidTransition     domainError = "invalid status transition"
 )

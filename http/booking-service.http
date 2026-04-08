@@ -32,7 +32,7 @@ Content-Type: application/json
   "pickup_address": "10 rue de Rivoli, 75001 Paris",
   "dropoff_address": "CDG Terminal 2E, 95700 Roissy-en-France",
   "total_amount": 4500,
-  "estimated_km": 32.5,
+  "estimated_distance": 32500,
   "co2_grams": 4200
 }
 

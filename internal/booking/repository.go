@@ -22,11 +22,12 @@ type Repository interface {
 }
 
 type postgresRepository struct {
-	q *db.Queries
+	q    *db.Queries
+	pool *pgxpool.Pool
 }
 
 func NewRepository(pool *pgxpool.Pool) Repository {
-	return &postgresRepository{q: db.New(pool)}
+	return &postgresRepository{q: db.New(pool), pool: pool}
 }
 
 // =============================================================================
@@ -67,26 +68,19 @@ func toInt4(i *int) pgtype.Int4 {
 	return pgtype.Int4{Int32: int32(*i), Valid: true}
 }
 
-func fromInt4(i pgtype.Int4) *int {
+func toNullInt2(i *int) pgtype.Int2 {
+	if i == nil {
+		return pgtype.Int2{Valid: false}
+	}
+	return pgtype.Int2{Int16: int16(*i), Valid: true}
+}
+
+func fromNullInt2(i pgtype.Int2) *int {
 	if !i.Valid {
 		return nil
 	}
-	v := int(i.Int32)
+	v := int(i.Int16)
 	return &v
-}
-
-func toFloat8(f *float64) pgtype.Float8 {
-	if f == nil {
-		return pgtype.Float8{Valid: false}
-	}
-	return pgtype.Float8{Float64: *f, Valid: true}
-}
-
-func fromFloat8(f pgtype.Float8) *float64 {
-	if !f.Valid {
-		return nil
-	}
-	return &f.Float64
 }
 
 // =============================================================================
@@ -94,44 +88,163 @@ func fromFloat8(f pgtype.Float8) *float64 {
 // =============================================================================
 
 func (r *postgresRepository) FindByID(ctx context.Context, id string) (*Booking, error) {
-	row, err := r.q.GetBookingByID(ctx, toUUID(id))
+	// Raw SQL to also fetch coordinates via ST_X / ST_Y
+	const q = `
+		SELECT id, client_id, vehicle_id,
+		       scheduled_at,
+		       pickup_street, pickup_city, pickup_country, pickup_details,
+		       ST_X(pickup_coordinates::geometry)  AS pickup_lng,
+		       ST_Y(pickup_coordinates::geometry)  AS pickup_lat,
+		       dropoff_street, dropoff_city, dropoff_country, dropoff_details,
+		       ST_X(dropoff_coordinates::geometry) AS dropoff_lng,
+		       ST_Y(dropoff_coordinates::geometry) AS dropoff_lat,
+		       passengers, suitcases, notes,
+		       status, total_amount, tax_rate_basis_points,
+		       estimated_distance, co2_grams,
+		       external_invoice_id, invoice_url,
+		       created_at, updated_at
+		FROM booking.bookings
+		WHERE id = $1`
+
+	b := &Booking{}
+	var pickupLng, pickupLat, dropoffLng, dropoffLat *float64
+
+	err := r.pool.QueryRow(ctx, q, toUUID(id)).Scan(
+		&b.ID, &b.ClientID, &b.VehicleID,
+		&b.ScheduledAt,
+		&b.PickupStreet, &b.PickupCity, &b.PickupCountry, &b.PickupDetails,
+		&pickupLng, &pickupLat,
+		&b.DropoffStreet, &b.DropoffCity, &b.DropoffCountry, &b.DropoffDetails,
+		&dropoffLng, &dropoffLat,
+		&b.Passengers, &b.Suitcases, &b.Notes,
+		&b.Status, &b.TotalAmount, &b.TaxRateBasisPoints,
+		&b.EstimatedDistance, &b.Co2Grams,
+		&b.ExternalInvoiceID, &b.InvoiceURL,
+		&b.CreatedAt, &b.UpdatedAt,
+	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrBookingNotFound
 		}
 		return nil, err
 	}
-	return toBooking(row), nil
+
+	b.PickupLat = pickupLat
+	b.PickupLng = pickupLng
+	b.DropoffLat = dropoffLat
+	b.DropoffLng = dropoffLng
+
+	return b, nil
 }
 
 func (r *postgresRepository) FindByClientID(ctx context.Context, clientID string) ([]Booking, error) {
-	rows, err := r.q.ListBookingsByClientID(ctx, toUUID(clientID))
+	const q = `
+		SELECT id, client_id, vehicle_id,
+		       scheduled_at,
+		       pickup_street, pickup_city, pickup_country, pickup_details,
+		       ST_X(pickup_coordinates::geometry)  AS pickup_lng,
+		       ST_Y(pickup_coordinates::geometry)  AS pickup_lat,
+		       dropoff_street, dropoff_city, dropoff_country, dropoff_details,
+		       ST_X(dropoff_coordinates::geometry) AS dropoff_lng,
+		       ST_Y(dropoff_coordinates::geometry) AS dropoff_lat,
+		       passengers, suitcases, notes,
+		       status, total_amount, tax_rate_basis_points,
+		       estimated_distance, co2_grams,
+		       external_invoice_id, invoice_url,
+		       created_at, updated_at
+		FROM booking.bookings
+		WHERE client_id = $1
+		ORDER BY scheduled_at DESC`
+
+	rows, err := r.pool.Query(ctx, q, toUUID(clientID))
 	if err != nil {
 		return nil, err
 	}
-	bookings := make([]Booking, len(rows))
-	for i, row := range rows {
-		bookings[i] = *toBooking(row)
+	defer rows.Close()
+
+	var bookings []Booking
+	for rows.Next() {
+		b := Booking{}
+		var pickupLng, pickupLat, dropoffLng, dropoffLat *float64
+
+		if err := rows.Scan(
+			&b.ID, &b.ClientID, &b.VehicleID,
+			&b.ScheduledAt,
+			&b.PickupStreet, &b.PickupCity, &b.PickupCountry, &b.PickupDetails,
+			&pickupLng, &pickupLat,
+			&b.DropoffStreet, &b.DropoffCity, &b.DropoffCountry, &b.DropoffDetails,
+			&dropoffLng, &dropoffLat,
+			&b.Passengers, &b.Suitcases, &b.Notes,
+			&b.Status, &b.TotalAmount, &b.TaxRateBasisPoints,
+			&b.EstimatedDistance, &b.Co2Grams,
+			&b.ExternalInvoiceID, &b.InvoiceURL,
+			&b.CreatedAt, &b.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		b.PickupLat = pickupLat
+		b.PickupLng = pickupLng
+		b.DropoffLat = dropoffLat
+		b.DropoffLng = dropoffLng
+
+		bookings = append(bookings, b)
 	}
-	return bookings, nil
+
+	return bookings, rows.Err()
 }
 
 func (r *postgresRepository) Create(ctx context.Context, b *Booking) error {
-	return r.q.CreateBooking(ctx, db.CreateBookingParams{
+	// Insert core fields via sqlc
+	err := r.q.CreateBooking(ctx, db.CreateBookingParams{
 		ID:                 toUUID(b.ID),
 		ClientID:           toUUID(b.ClientID),
 		VehicleID:          toUUID(b.VehicleID),
 		ScheduledAt:        toTimestamptz(b.ScheduledAt),
-		PickupAddress:      b.PickupAddress,
-		DropoffAddress:     b.DropoffAddress,
+		PickupStreet:       b.PickupStreet,
+		PickupCity:         b.PickupCity,
+		PickupCountry:      b.PickupCountry,
+		PickupDetails:      toText(b.PickupDetails),
+		DropoffStreet:      b.DropoffStreet,
+		DropoffCity:        b.DropoffCity,
+		DropoffCountry:     b.DropoffCountry,
+		DropoffDetails:     toText(b.DropoffDetails),
+		Passengers:         int16(b.Passengers),
+		Suitcases:          int16(b.Suitcases),
+		Notes:              toText(b.Notes),
 		Status:             db.BookingBookingStatus(b.Status),
 		TotalAmount:        toInt4(b.TotalAmount),
-		TaxRateBasisPoints: toInt4(b.TaxRateBasisPoints),
-		EstimatedKm:        toFloat8(b.EstimatedKm),
+		TaxRateBasisPoints: toNullInt2(b.TaxRateBasisPoints),
+		EstimatedDistance:  toInt4(b.EstimatedDistance),
 		Co2Grams:           toInt4(b.Co2Grams),
 		CreatedAt:          toTimestamptz(b.CreatedAt),
 		UpdatedAt:          toTimestamptz(b.UpdatedAt),
 	})
+	if err != nil {
+		return err
+	}
+
+	// Set coordinates via raw SQL if provided
+	if b.PickupLng != nil && b.PickupLat != nil && b.DropoffLng != nil && b.DropoffLat != nil {
+		const coordSQL = `
+			UPDATE booking.bookings
+			SET pickup_coordinates  = ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
+			    dropoff_coordinates = ST_SetSRID(ST_MakePoint($4, $5), 4326)::geography,
+			    updated_at          = $6
+			WHERE id = $1`
+
+		_, err = r.pool.Exec(ctx, coordSQL,
+			toUUID(b.ID),
+			*b.PickupLng, *b.PickupLat,
+			*b.DropoffLng, *b.DropoffLat,
+			b.UpdatedAt,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (r *postgresRepository) UpdateStatus(ctx context.Context, id string, status BookingStatus, updatedAt time.Time) error {
@@ -163,25 +276,4 @@ func (r *postgresRepository) UpdateInvoice(ctx context.Context, id string, exter
 		return ErrBookingNotFound
 	}
 	return nil
-}
-
-// toBooking maps a generated db.BookingBooking to the domain Booking.
-func toBooking(row db.BookingBooking) *Booking {
-	return &Booking{
-		ID:                 fromUUID(row.ID),
-		ClientID:           fromUUID(row.ClientID),
-		VehicleID:          fromUUID(row.VehicleID),
-		ScheduledAt:        row.ScheduledAt.Time,
-		PickupAddress:      row.PickupAddress,
-		DropoffAddress:     row.DropoffAddress,
-		Status:             BookingStatus(row.Status),
-		TotalAmount:        fromInt4(row.TotalAmount),
-		TaxRateBasisPoints: fromInt4(row.TaxRateBasisPoints),
-		EstimatedKm:        fromFloat8(row.EstimatedKm),
-		Co2Grams:           fromInt4(row.Co2Grams),
-		ExternalInvoiceID:  fromText(row.ExternalInvoiceID),
-		InvoiceURL:         fromText(row.InvoiceUrl),
-		CreatedAt:          row.CreatedAt.Time,
-		UpdatedAt:          row.UpdatedAt.Time,
-	}
 }

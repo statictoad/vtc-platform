@@ -60,12 +60,23 @@ type BookingBooking struct {
 	ClientID           pgtype.UUID
 	VehicleID          pgtype.UUID
 	ScheduledAt        pgtype.Timestamptz
-	PickupAddress      string
-	DropoffAddress     string
+	PickupStreet       string
+	PickupCity         string
+	PickupCountry      string
+	PickupDetails      pgtype.Text
+	PickupCoordinates  interface{}
+	DropoffStreet      string
+	DropoffCity        string
+	DropoffCountry     string
+	DropoffDetails     pgtype.Text
+	DropoffCoordinates interface{}
+	Passengers         int16
+	Suitcases          int16
+	Notes              pgtype.Text
 	Status             BookingBookingStatus
 	TotalAmount        pgtype.Int4
-	TaxRateBasisPoints pgtype.Int4
-	EstimatedKm        pgtype.Float8
+	TaxRateBasisPoints pgtype.Int2
+	EstimatedDistance  pgtype.Int4
 	Co2Grams           pgtype.Int4
 	ExternalInvoiceID  pgtype.Text
 	InvoiceUrl         pgtype.Text

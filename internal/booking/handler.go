@@ -38,14 +38,14 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 // =============================================================================
 
 type createBookingRequest struct {
-	ClientID       string    `json:"client_id"`
-	VehicleID      string    `json:"vehicle_id"`
-	ScheduledAt    time.Time `json:"scheduled_at"`
-	PickupAddress  string    `json:"pickup_address"`
-	DropoffAddress string    `json:"dropoff_address"`
-	TotalAmount    *int      `json:"total_amount"`
-	EstimatedKm    *float64  `json:"estimated_km"`
-	Co2Grams       *int      `json:"co2_grams"`
+	ClientID          string    `json:"client_id"`
+	VehicleID         string    `json:"vehicle_id"`
+	ScheduledAt       time.Time `json:"scheduled_at"`
+	PickupAddress     string    `json:"pickup_address"`
+	DropoffAddress    string    `json:"dropoff_address"`
+	TotalAmount       *int      `json:"total_amount"`
+	EstimatedDistance *int      `json:"estimated_distance"`
+	Co2Grams          *int      `json:"co2_grams"`
 }
 
 type bookingResponse struct {
@@ -58,7 +58,7 @@ type bookingResponse struct {
 	Status             BookingStatus `json:"status"`
 	TotalAmount        *int          `json:"total_amount,omitempty"`
 	TaxRateBasisPoints *int          `json:"tax_rate_basis_points,omitempty"`
-	EstimatedKm        *float64      `json:"estimated_km,omitempty"`
+	EstimatedDistance  *int          `json:"estimated_distance,omitempty"`
 	Co2Grams           *int          `json:"co2_grams,omitempty"`
 	ExternalInvoiceID  *string       `json:"external_invoice_id,omitempty"`
 	InvoiceURL         *string       `json:"invoice_url,omitempty"`
@@ -78,7 +78,7 @@ func toResponse(b *Booking) bookingResponse {
 		Status:             b.Status,
 		TotalAmount:        b.TotalAmount,
 		TaxRateBasisPoints: b.TaxRateBasisPoints,
-		EstimatedKm:        b.EstimatedKm,
+		EstimatedDistance:  b.EstimatedDistance,
 		Co2Grams:           b.Co2Grams,
 		ExternalInvoiceID:  b.ExternalInvoiceID,
 		InvoiceURL:         b.InvoiceURL,
@@ -143,14 +143,14 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := CreateBookingInput{
-		ClientID:       req.ClientID,
-		VehicleID:      req.VehicleID,
-		ScheduledAt:    req.ScheduledAt,
-		PickupAddress:  req.PickupAddress,
-		DropoffAddress: req.DropoffAddress,
-		TotalAmount:    req.TotalAmount,
-		EstimatedKm:    req.EstimatedKm,
-		Co2Grams:       req.Co2Grams,
+		ClientID:          req.ClientID,
+		VehicleID:         req.VehicleID,
+		ScheduledAt:       req.ScheduledAt,
+		PickupAddress:     req.PickupAddress,
+		DropoffAddress:    req.DropoffAddress,
+		TotalAmount:       req.TotalAmount,
+		EstimatedDistance: req.EstimatedDistance,
+		Co2Grams:          req.Co2Grams,
 	}
 
 	b, err := h.svc.Create(r.Context(), input)
